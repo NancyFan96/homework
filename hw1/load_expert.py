@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+
+"""
+Util code to load a expert data and split it into train set and test set.
+Functions:
+    load_expert_data(filename)
+    split_expert_data(x, y, ratio=0.3)
+
+Author: Naijia Fan
+"""
+
 import pickle
 from sklearn.model_selection import train_test_split
 
