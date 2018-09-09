@@ -10,11 +10,8 @@ Author: Naijia Fan
 
 import os
 import pickle
-import tensorflow as tf
 from tensorflow import keras
 import numpy as np
-import gym
-import tf_util
 
 
 def main():
@@ -28,10 +25,7 @@ def main():
                         help='Number of expert roll outs')
     args = parser.parse_args()
 
-    print('loading and building behavioral cloning')
     bc_model = keras.models.load_model(args.cloning_policy_file)
-    print('loaded and built')
-
 
     import gym
     env = gym.make(args.envname)
