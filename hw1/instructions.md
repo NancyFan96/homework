@@ -11,6 +11,8 @@ If using MAC, refer to this
     pip install -r requirements.txt
     pip install sklearn
     pip install h5py
+    mkdir cloning_policy
+    mkdir expert_data
 
 
 
@@ -30,5 +32,5 @@ Reference
 
 More details of environmental setup can be refer to this 
 
-[link]: https://github.com/NancyFan96/homework/tree/master/hw1 
+[link]: https://github.com/NancyFan96/homework/tree/master/hw1
 
