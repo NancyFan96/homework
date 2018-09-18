@@ -1,5 +1,7 @@
 # CS294-112 HW 2: Policy Gradient
 
+
+## Instructions
 Dependencies:
  * Python **3.5**
  * Numpy version **1.14.5**
@@ -14,3 +16,15 @@ Before doing anything, first replace `gym/envs/box2d/lunar_lander.py` with the p
 The only file that you need to look at is `train_pg_f18.py`, which you will implement.
 
 See the [HW2 PDF](http://rail.eecs.berkeley.edu/deeprlcourse/static/homeworks/hw2.pdf) for further instructions.
+
+## My Hints
+
+### Installment
+Also depend on *swig*:
+`brew install swig`
+
+### Codes
+
+
+
+### Experiments
