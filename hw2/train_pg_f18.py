@@ -43,8 +43,8 @@ def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=
         # YOUR_CODE_HERE
         layer = input_placeholder
         for i in range(n_layers):
-            layer = tf.layers.dense(layer, size, activation=activation, )
-        output_placeholder = tf.layers.dense(layer, output_size, activation=output_activation, )
+            layer = tf.layers.dense(layer, size, activation=activation)
+        output_placeholder = tf.layers.dense(layer, output_size, activation=output_activation)
 
     return output_placeholder
 
@@ -269,7 +269,7 @@ class Agent(object):
         #                           ----------PROBLEM 2----------
         # Loss Function and Training Operation
         #========================================================================================#
-        loss = tf.reduce_mean(-self.sy_logprob_n * self.sy_adv_n)  # YOUR CODE HERE !!!
+        loss = - tf.reduce_mean(self.sy_logprob_n * self.sy_adv_n)  # YOUR CODE HERE !!!
         self.update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(loss)
 
         #========================================================================================#
@@ -277,10 +277,10 @@ class Agent(object):
         # Optional Baseline
         #
         # Define placeholders for targets, a loss function and an update op for fitting a 
-        # neural network baseline. These will be used to fit the neural network baseline. 
+        # neural network baseline. These will be used to fit the neural network baseline.
         #========================================================================================#
         if self.nn_baseline:
-            raise NotImplementedError
+            # raise NotImplementedError
             self.baseline_prediction = tf.squeeze(build_mlp(
                                     self.sy_ob_no, 
                                     1, 
@@ -288,8 +288,8 @@ class Agent(object):
                                     n_layers=self.n_layers,
                                     size=self.size))
             # YOUR_CODE_HERE
-            self.sy_target_n = None
-            baseline_loss = None
+            self.sy_target_n = tf.placeholder(shape=[None], name="baseline", dtype=tf.float32)
+            baseline_loss = tf.nn.l2_loss(self.baseline_prediction - self.sy_target_n)
             self.baseline_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(baseline_loss)
 
     def sample_trajectories(self, itr, env):
@@ -402,14 +402,18 @@ class Agent(object):
         """
         # YOUR_CODE_HERE
         # !!! np shape !!!
+        def convolution_to_go(re):
+            return [np.sum(np.power(self.gamma, np.arange(len(re) - t)) * re[t:]) for t in range(len(re))]
+
+        def convolution_all_time(re):
+            return [np.sum(np.power(self.gamma, np.arange(len(re))) * re) for t in range(len(re))]
+
         if self.reward_to_go:
             # raise NotImplementedError
-            q_n = [[np.sum(np.power(self.gamma, np.arange(pathlength(re) - t)) * re[t:])
-                    for t in range(pathlength(re))] for re in re_n]
+            q_n = [v for sublist in list(map(convolution_to_go, re_n)) for v in sublist]
         else:
             # raise NotImplementedError
-            q_n = [[np.sum(np.power(self.gamma, np.arange(pathlength(re))) * re)
-                    for t in range(pathlength(re))] for re in re_n]
+            q_n = [v for sublist in list(map(convolution_all_time, re_n)) for v in sublist]
         return q_n
 
     def compute_advantage(self, ob_no, q_n):
@@ -441,8 +445,8 @@ class Agent(object):
             # Hint #bl1: rescale the output from the nn_baseline to match the statistics
             # (mean and std) of the current batch of Q-values. (Goes with Hint
             # #bl2 in Agent.update_parameters.
-            raise NotImplementedError
-            b_n = None # YOUR CODE HERE
+            # raise NotImplementedError
+            b_n = self.sess.run(self.baseline_prediction, feed_dict={self.sy_ob_no: ob_no}) # YOUR CODE HERE
             adv_n = q_n - b_n
         else:
             adv_n = q_n.copy()
@@ -515,8 +519,10 @@ class Agent(object):
             # Agent.compute_advantage.)
 
             # YOUR_CODE_HERE
-            raise NotImplementedError
-            target_n = None 
+            # raise NotImplementedError
+            target_n = (q_n - np.mean(q_n, axis=0)) / (np.std(q_n, axis=0) + 1e-7)
+            feed_dict = {self.sy_ob_no: ob_no, self.sy_target_n: target_n}
+            self.sess.run(self.baseline_update_op, feed_dict)
 
         #====================================================================================#
         #                           ----------PROBLEM 3----------
@@ -531,9 +537,9 @@ class Agent(object):
 
         # YOUR_CODE_HERE
         # raise NotImplementedError
-        feed_dict = {sy_ob_no: ob_no, sy_ac_na: ac_na, sy_adv_n: adv_n}
+        feed_dict = {self.sy_ob_no: ob_no, self.sy_ac_na: ac_na, self.sy_adv_n: adv_n}
         # loss_1 = sess.run(loss, feed_dict)
-        sess.run(update_op, feed_dict)
+        self.sess.run(self.update_op, feed_dict)
         # loss_2 = sess.run(loss, feed_dict)
 
 
