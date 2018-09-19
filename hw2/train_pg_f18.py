@@ -447,7 +447,7 @@ class Agent(object):
             # #bl2 in Agent.update_parameters.
             # raise NotImplementedError
             b_n = self.sess.run(self.baseline_prediction, feed_dict={self.sy_ob_no: ob_no}) # YOUR CODE HERE
-            # b_n = (b_n - np.mean(b_n)) / (np.std(b_n) + 1e-7) * (np.std(q_n) + 1e-7) + np.mean(q_n)
+            b_n = (b_n - np.mean(b_n)) / (np.std(b_n) + 1e-7) * (np.std(q_n) + 1e-7) + np.mean(q_n)
             adv_n = q_n - b_n
         else:
             adv_n = q_n.copy()
