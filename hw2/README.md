@@ -23,6 +23,8 @@ See the [HW2 PDF](http://rail.eecs.berkeley.edu/deeprlcourse/static/homeworks/hw
 Also depend on *swig*:
 `brew install swig`
 
+Also `pip install box2d box2d-kengz`
+
 ### Codes
 
 
