@@ -159,7 +159,14 @@ class QLearner(object):
     ######
 
     # YOUR CODE HERE
-
+    # New Q value = Current Q value + lr *
+    #     Bellman error: [Reward + discount_rate * (highest Q value between possible actions from the new state s’ ) — Current Q value ]
+    q_t = q_func(obs_t_float, self.num_actions, scope="q_func", reuse=False)
+    q_tp1 = q_func(obs_tp1_float, self.num_actions, scope="target_q_func", reuse=False)
+    q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_func")
+    target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="target_q_func")
+    self.total_error = tf.reduce_mean(huber_loss(
+      self.rew_t_ph + (1 - self.done_mask_ph) * gamma * tf.reduce_max(q_tp1, axis=1) - q_t))
     ######
 
     # construct optimization op (with gradient clipping)
@@ -229,6 +236,19 @@ class QLearner(object):
     #####
 
     # YOUR CODE HERE
+    idx = self.replay_buffer.store_frame(self.last_obs)
+    recent_obs = self.replay_buffer.encode_recent_observation()
+
+    if not self.model_initialized:
+      action = self.env.action_space.sample()
+    else:
+      action = tf.argmax(self.session.run(self.q_func(recent_obs, self.num_actions, scope="q_func", reuse=False)))
+
+    self.last_obs, reward, done, info = self.env.step(action)
+    self.replay_buffer.store_effect(idx, action, reward, done)
+
+    if done:
+      self.last_obs = self.env.reset()
 
   def update_model(self):
     ### 3. Perform experience replay and train the network.
@@ -274,6 +294,25 @@ class QLearner(object):
       #####
 
       # YOUR CODE HERE
+      obs_t_batch, act_t_batch, rew_t_batch, obs_tp1_batch, done_mask_batch \
+        = self.replay_buffer.sample(self.batch_size)
+      if not self.model_initialized:
+        initialize_interdependent_variables(self.session, tf.global_variables(), {
+                 self.obs_t_ph: obs_t_batch,
+                 self.obs_tp1_ph: obs_tp1_batch,
+             })
+        self.model_initialized = True
+
+      feed_dict = {self.obs_t_ph: obs_t_batch,
+                   self.act_t_ph: act_t_batch,
+                   self.rew_t_ph: rew_t_batch,
+                   self.obs_tp1_ph: obs_tp1_batch,
+                   self.done_mask_ph: done_mask_batch,
+                   self.learning_rate: self.optimizer_spec.lr_schedule.value(self.t)}
+      self.session.run(self.train_fn, feed_dict=feed_dict)
+
+      if self.num_param_updates % self.target_update_freq == 0:
+        self.session.run(self.update_target_fn)
 
       self.num_param_updates += 1
 
