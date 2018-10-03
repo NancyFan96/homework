@@ -384,10 +384,11 @@ class Agent(object):
         # self.num_grad_steps_per_target_update number of steps
         n = self.num_grad_steps_per_target_update * self.num_target_updates
         for t in range(0, n):
-            next_v_n = self.sess.run(self.critic_prediction, feed_dict={self.sy_ob_no: next_ob_no})
-            target_n = re_n + (1 - terminal_n) * self.gamma * next_v_n
-            if t % self.num_grad_steps_per_target_update:
-                self.sess.run(self.critic_update_op, feed_dict={self.sy_target_n: target_n, self.sy_ob_no: ob_no})
+            if t % self.num_grad_steps_per_target_update == 0:
+                next_v_n = self.sess.run(self.critic_prediction, feed_dict={self.sy_ob_no: next_ob_no})
+                target_n = re_n + (1 - terminal_n) * self.gamma * next_v_n
+
+            self.sess.run(self.critic_update_op, feed_dict={self.sy_target_n: target_n, self.sy_ob_no: ob_no})
 
     def update_actor(self, ob_no, ac_na, adv_n):
         """ 
