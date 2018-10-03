@@ -284,24 +284,27 @@ class Agent(object):
                 env.render()
                 time.sleep(0.1)
             obs.append(ob)
-            raise NotImplementedError
-            ac = None # YOUR HW2 CODE HERE
+            # raise NotImplementedError
+            ac = self.sess.run(self.sy_sampled_ac, feed_dict={self.sy_ob_no: ob[None]}) # YOUR HW2 CODE HERE
             ac = ac[0]
             acs.append(ac)
             ob, rew, done, _ = env.step(ac)
             # add the observation after taking a step to next_obs
             # YOUR CODE HERE
-            raise NotImplementedError
+            # raise NotImplementedError
+            next_obs.append(ob)
             rewards.append(rew)
             steps += 1
             # If the episode ended, the corresponding terminal value is 1
             # otherwise, it is 0
             # YOUR CODE HERE
             if done or steps > self.max_path_length:
-                raise NotImplementedError
+                # raise NotImplementedError
+                terminals.append(1)
                 break
             else:
-                raise NotImplementedError
+                # raise NotImplementedError
+                terminals.append(0)
         path = {"observation" : np.array(obs, dtype=np.float32), 
                 "reward" : np.array(rewards, dtype=np.float32), 
                 "action" : np.array(acs, dtype=np.float32),
@@ -335,8 +338,11 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing Q(s, a)
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
-        raise NotImplementedError
-        adv_n = None
+        # raise NotImplementedError
+        next_q_n = re_n + (1 - terminal_n) * self.gamma * \
+                  self.sess.run(self.critic_prediction, feed_dict={self.sy_ob_no: next_ob_no})
+        q_n = self.sess.run(self.critic_prediction, feed_dict={self.sy_ob_no: ob_no})
+        adv_n = next_q_n - q_n
 
         if self.normalize_advantages:
             # raise NotImplementedError
@@ -370,7 +376,18 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing the target
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
-        raise NotImplementedError
+        # raise NotImplementedError
+
+        # You must perform
+        # self.num_grad_steps_per_target_update * self.num_target_updates
+        # number of updates, and recompute the target values every
+        # self.num_grad_steps_per_target_update number of steps
+        n = self.num_grad_steps_per_target_update * self.num_target_updates
+        for t in range(0, n):
+            next_v_n = self.sess.run(self.critic_prediction, feed_dict={self.sy_ob_no: next_ob_no})
+            target_n = re_n + (1 - terminal_n) * self.gamma * next_v_n
+            if t % self.num_grad_steps_per_target_update:
+                self.sess.run(self.critic_update_op, feed_dict={self.sy_target_n: target_n, self.sy_ob_no: ob_no})
 
     def update_actor(self, ob_no, ac_na, adv_n):
         """ 
@@ -492,7 +509,10 @@ def train_AC(
         # (2) use the updated critic to compute the advantage by, calling agent.estimate_advantage
         # (3) use the estimated advantage values to update the actor, by calling agent.update_actor
         # YOUR CODE HERE
-        raise NotImplementedError
+        # raise NotImplementedError
+        agent.update_critic(ob_no, next_ob_no, re_n, terminal_n)
+        adv_n = agent.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n)
+        agent.update_actor(ob_no, ac_na, adv_n)
 
         # Log diagnostics
         returns = [path["reward"].sum() for path in paths]
