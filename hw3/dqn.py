@@ -161,12 +161,15 @@ class QLearner(object):
     # YOUR CODE HERE
     # New Q value = Current Q value + lr *
     #     Bellman error: [Reward + discount_rate * (highest Q value between possible actions from the new state s’ ) — Current Q value ]
-    q_t = q_func(obs_t_float, self.num_actions, scope="q_func", reuse=False)
-    q_tp1 = q_func(obs_tp1_float, self.num_actions, scope="target_q_func", reuse=False)
+    self.q_val = q_func(obs_t_float, self.num_actions, scope="q_func")
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_func")
+
+    self.target_q_val = q_func(obs_tp1_float, self.num_actions, scope="target_q_func")
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="target_q_func")
-    self.total_error = tf.reduce_mean(huber_loss(
-      self.rew_t_ph + (1 - self.done_mask_ph) * gamma * tf.reduce_max(q_tp1, axis=1) - q_t))
+
+    self.total_error = tf.reduce_mean(huber_loss( \
+      self.rew_t_ph + (1 - self.done_mask_ph) * gamma * tf.stop_gradient(tf.reduce_max(self.target_q_val, axis=1)) \
+      - tf.reduce_sum(self.q_val * tf.one_hot(self.act_t_ph, self.num_actions), axis=1)))
     ######
 
     # construct optimization op (with gradient clipping)
@@ -239,10 +242,10 @@ class QLearner(object):
     idx = self.replay_buffer.store_frame(self.last_obs)
     recent_obs = self.replay_buffer.encode_recent_observation()
 
-    if not self.model_initialized:
+    if not self.model_initialized or random.random() < self.exploration.value(self.t):
       action = self.env.action_space.sample()
     else:
-      action = tf.argmax(self.session.run(self.q_func(recent_obs, self.num_actions, scope="q_func", reuse=False)))
+      action = self.session.run(tf.argmax(self.q_value, axis=1), feed_dict={self.obs_t_ph: recent_obs})
 
     self.last_obs, reward, done, info = self.env.step(action)
     self.replay_buffer.store_effect(idx, action, reward, done)
@@ -296,6 +299,7 @@ class QLearner(object):
       # YOUR CODE HERE
       obs_t_batch, act_t_batch, rew_t_batch, obs_tp1_batch, done_mask_batch \
         = self.replay_buffer.sample(self.batch_size)
+
       if not self.model_initialized:
         initialize_interdependent_variables(self.session, tf.global_variables(), {
                  self.obs_t_ph: obs_t_batch,
@@ -313,6 +317,7 @@ class QLearner(object):
 
       if self.num_param_updates % self.target_update_freq == 0:
         self.session.run(self.update_target_fn)
+        self.num_param_updates = 0
 
       self.num_param_updates += 1
 
