@@ -159,17 +159,25 @@ class QLearner(object):
     ######
 
     # YOUR CODE HERE
+    #
     # New Q value = Current Q value + lr *
-    #     Bellman error: [Reward + discount_rate * (highest Q value between possible actions from the new state s’ ) — Current Q value ]
+    #     Bellman error: [Reward + discount_rate * (highest Q value between possible actions from the new state s’ )
+    #     — Current Q value ]
+    ######
+
     self.q_val = q_func(obs_t_float, self.num_actions, scope="q_func")
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_func")
 
     self.target_q_val = q_func(obs_tp1_float, self.num_actions, scope="target_q_func")
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="target_q_func")
 
-    self.total_error = tf.reduce_mean(huber_loss( \
-      self.rew_t_ph + (1 - self.done_mask_ph) * gamma * tf.stop_gradient(tf.reduce_max(self.target_q_val, axis=1)) \
-      - tf.reduce_sum(self.q_val * tf.one_hot(self.act_t_ph, self.num_actions), axis=1)))
+    self.total_error = tf.reduce_mean(
+      huber_loss(
+        self.rew_t_ph
+        + (1 - self.done_mask_ph) * gamma * tf.stop_gradient(tf.reduce_max(self.target_q_val, axis=1))
+        - tf.reduce_sum(self.q_val * tf.one_hot(self.act_t_ph, self.num_actions), axis=1)
+      )
+    )
     ######
 
     # construct optimization op (with gradient clipping)
@@ -240,18 +248,24 @@ class QLearner(object):
 
     # YOUR CODE HERE
     idx = self.replay_buffer.store_frame(self.last_obs)
-    recent_obs = self.replay_buffer.encode_recent_observation()
+    recent_obs_encode = self.replay_buffer.encode_recent_observation()
+    recent_obs = np.expand_dims(recent_obs_encode, 0)
 
-    if not self.model_initialized or random.random() < self.exploration.value(self.t):
+    # if not init
+    # or want epsilon greedy exploration
+    if not self.model_initialized \
+            or random.random() < self.exploration.value(self.t):
       action = self.env.action_space.sample()
     else:
-      action = self.session.run(tf.argmax(self.q_value, axis=1), feed_dict={self.obs_t_ph: recent_obs})
+      action = self.session.run(tf.argmax(self.q_val, axis=1), feed_dict={self.obs_t_ph: recent_obs})[0]
 
-    self.last_obs, reward, done, info = self.env.step(action)
-    self.replay_buffer.store_effect(idx, action, reward, done)
-
+    obs, reward, done, info = self.env.step(action)
+    # if reach an episode boundary, get a new observation
     if done:
-      self.last_obs = self.env.reset()
+      obs = self.env.reset()
+
+    self.replay_buffer.store_effect(idx, action, reward, done)
+    self.last_obs = obs
 
   def update_model(self):
     ### 3. Perform experience replay and train the network.
@@ -297,9 +311,12 @@ class QLearner(object):
       #####
 
       # YOUR CODE HERE
+
+      # use the replay buffer to sample a batch of transitions
       obs_t_batch, act_t_batch, rew_t_batch, obs_tp1_batch, done_mask_batch \
         = self.replay_buffer.sample(self.batch_size)
 
+      # initialize the model if it has not been initialized yet
       if not self.model_initialized:
         initialize_interdependent_variables(self.session, tf.global_variables(), {
                  self.obs_t_ph: obs_t_batch,
@@ -307,6 +324,7 @@ class QLearner(object):
              })
         self.model_initialized = True
 
+      # train the model
       feed_dict = {self.obs_t_ph: obs_t_batch,
                    self.act_t_ph: act_t_batch,
                    self.rew_t_ph: rew_t_batch,
@@ -315,6 +333,8 @@ class QLearner(object):
                    self.learning_rate: self.optimizer_spec.lr_schedule.value(self.t)}
       self.session.run(self.train_fn, feed_dict=feed_dict)
 
+      # periodically update the target network by calling
+      # update every target_update_freq steps, with self.num_param_updates init as 0
       if self.num_param_updates % self.target_update_freq == 0:
         self.session.run(self.update_target_fn)
         self.num_param_updates = 0
