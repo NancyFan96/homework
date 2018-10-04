@@ -206,7 +206,8 @@ class QLearner(object):
     self.mean_episode_reward      = -float('nan')
     self.best_mean_episode_reward = -float('inf')
     self.last_obs = self.env.reset()
-    self.log_every_n_steps = 10000
+    self.log_every_n_steps = 1000
+    # self.log_every_n_steps = 10000
 
     self.start_time = None
     self.t = 0
@@ -367,8 +368,31 @@ class QLearner(object):
 
       sys.stdout.flush()
 
+      # with open(self.rew_file, 'wb') as f:
+        # pickle.dump(episode_rewards, f, pickle.HIGHEST_PROTOCOL)
+
+      # new pickle dump for plot requirements
+      try:
+        with open(self.rew_file, 'rb') as f:
+          data = pickle.loads(f.read())
+      except:
+        with open(self.rew_file, 'wb') as f:
+          pickle.dump({
+            'timestamp': [],
+            'episode': [],
+            'mean_episode_reward': [],
+            'best_mean_episode_reward': []
+          }, f, pickle.HIGHEST_PROTOCOL)
+        with open(self.rew_file, 'rb') as f:
+          data = pickle.loads(f.read())
+
       with open(self.rew_file, 'wb') as f:
-        pickle.dump(episode_rewards, f, pickle.HIGHEST_PROTOCOL)
+        pickle.dump({
+          'timestamp': data['timestamp'] + [self.t],
+          'episode': data['episode'] + [len(episode_rewards)],
+          'mean_episode_reward': data['mean_episode_reward'] + [self.mean_episode_reward],
+          'best_mean_episode_reward': data['best_mean_episode_reward'] + [self.best_mean_episode_reward]
+        }, f, pickle.HIGHEST_PROTOCOL)
 
 def learn(*args, **kwargs):
   alg = QLearner(*args, **kwargs)
