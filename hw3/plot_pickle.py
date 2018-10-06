@@ -11,7 +11,7 @@ def draw_episode_rewards(data, figName):
     :param figName:
     :return:
     """
-    ts = range(len(data))
+    ts = np.array(range(len(data)))
     meanEps = np.full(100, -np.Inf)
     meanEps = np.concatenate([meanEps, np.array([np.mean(data[i-100:i]) for i in range(100, len(data))])])
     bestMeanEps = np.concatenate([np.array([-np.Inf]), np.array([np.max(meanEps[:i]) for i in range(1, len(data))])])
@@ -23,6 +23,7 @@ def draw_episode_rewards(data, figName):
     plt.xlabel('Timesteps')
     plt.ylabel('Mean Episode Reward')
     plt.legend(['Mean', 'Best Mean'])
+    plt.ticklabel_format(axis='x', style='sci', scilimits=(0, 3))
 
     filename = 'doc/' + figName + '.png'
     print(filename)
@@ -54,6 +55,7 @@ def draw_episode_rewards_by_timestamp(data, figName):
     plt.xlabel('Timesteps')
     plt.ylabel('Mean Episode Reward')
     plt.legend(['Mean', 'Best Mean'])
+    plt.ticklabel_format(axis='x', style='sci', scilimits=(0, 3))
 
     filename = 'doc/' + figName + '.png'
     print(filename)
@@ -67,6 +69,8 @@ def main():
     # 2504a4ce-c448-43d0-b5a0-42e10a4ba8c2.pkl ram
     # a2df2ae9-4df5-4303-91fb-471412039e64.pkl atari timestampe
     # a806c937-b45c-4dcb-b7f6-dc8fb5b91fc6.pkl                  long
+    #
+    # 63f91c15-c20a-49fe-a12e-527898c818d4.pkl final
 
 
     # with open('dbc8b70a-5a49-4788-be9d-adb4fa673398.pkl', 'rb') as fh:
@@ -81,10 +85,15 @@ def main():
     #     data = pickle.loads(fh.read())
     # fig1_name = 'p1q1-atari-test-episode'
 
-    with open('a806c937-b45c-4dcb-b7f6-dc8fb5b91fc6.pkl', 'rb') as fh:
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--filename', '-f', type=str, required=True)
+    parser.add_argument('--exp_name', '-e', type=str, default='atari')
+    args = parser.parse_args()
+
+    with open(args.filename, 'rb') as fh:
         data = pickle.loads(fh.read())
-    fig1_name = 'p1q1-lander-test-timestamp2'
-    draw_episode_rewards_by_timestamp(data, fig1_name)
+    draw_episode_rewards_by_timestamp(data, args.exp_name)
 
 
 if __name__ == '__main__':
