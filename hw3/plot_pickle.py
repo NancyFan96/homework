@@ -83,18 +83,24 @@ def get_data(pkls, names):
     return datasets
 
 
-def plot_data(data, names):
+def plot_data(data, names, title):
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
 
     for name in names:
-        sns.set(style="darkgrid", font_scale=1.5)
+        sns.set()
         sns.lineplot(x="timestamp", y="best_mean_episode_reward", data=data[data["Name"] == name], label=name + ": best")
         sns.lineplot(x="timestamp", y="mean_episode_reward", data=data[data["Name"] == name], label=name + ": mean")
 
+    plt.title(title)
     plt.xlabel('Timesteps')
     plt.ylabel('Mean Episode Reward')
     plt.ticklabel_format(axis='x', style='sci', scilimits=(0, 3))
+
+    import time
+    filename = 'doc/' + names[0] + '_' + time.strftime("%d-%m-%Y_%H-%M-%S") + '.png'
+    print(filename)
+    plt.savefig(filename)
     plt.show()
 
 
@@ -122,6 +128,7 @@ def main():
 
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument('--title', '-t', type=str, default="Mean 100-Episode Reward of Basic Q-Learning")
     parser.add_argument('--file_name', '-f', type=str, nargs='*', required=True)
     parser.add_argument('--exp_name', '-e', type=str, nargs='*')
     args = parser.parse_args()
@@ -138,7 +145,7 @@ def main():
         names = args.exp_name
 
     data = get_data(files, names)
-    plot_data(data, names)
+    plot_data(data, names, args.title)
 
 
 if __name__ == '__main__':
