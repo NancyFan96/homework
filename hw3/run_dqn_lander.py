@@ -60,7 +60,8 @@ def lander_kwargs():
 def lander_learn(env,
                  session,
                  num_timesteps,
-                 seed):
+                 seed,
+                 double_q):
 
     optimizer = lander_optimizer()
     stopping_criterion = lander_stopping_criterion(num_timesteps)
@@ -71,7 +72,7 @@ def lander_learn(env,
         session=session,
         exploration=lander_exploration_schedule(num_timesteps),
         stopping_criterion=lander_stopping_criterion(num_timesteps),
-        double_q=True,
+        double_q=double_q,
         **lander_kwargs()
     )
     env.close()
@@ -104,13 +105,19 @@ def get_env(seed):
     return env
 
 def main():
+    # My Code, add switch of double q learning
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--double', action='store_true')
+    args = parser.parse_args()
+
     # Run training
     seed = 4565 # you may want to randomize this
     print('random seed = %d' % seed)
     env = get_env(seed)
     session = get_session()
     set_global_seeds(seed)
-    lander_learn(env, session, num_timesteps=500000, seed=seed)
+    lander_learn(env, session, num_timesteps=500000, seed=seed, double_q=args.double)
 
 if __name__ == "__main__":
     main()
