@@ -31,11 +31,13 @@ def atari_model(img_in, num_actions, scope, reuse=False):
 def atari_learn(env,
                 session,
                 num_timesteps,
-                lr_multi):
+                lr_multi,
+                double_q):
     # This is just a rough estimate
     num_iterations = float(num_timesteps) / 4.0
 
     lr_multiplier = lr_multi
+    print("learning rate multiplier: ", lr_multiplier)
     lr_schedule = PiecewiseSchedule([
                                          (0,                   1e-4 * lr_multiplier),
                                          (num_iterations / 10, 1e-4 * lr_multiplier),
@@ -51,7 +53,7 @@ def atari_learn(env,
     def stopping_criterion(env, t):
         # notice that here t is the number of steps of the wrapped env,
         # which is different from the number of steps in the underlying env
-        return get_wrapper_by_name(env, "Monitor").get_total_steps() >= num_timesteps
+        return get_wrapper_by_name(env, "Monitor").get_total_steps() >= 5e6 #num_timesteps
 
     exploration_schedule = PiecewiseSchedule(
         [
@@ -76,7 +78,7 @@ def atari_learn(env,
         frame_history_len=4,
         target_update_freq=10000,
         grad_norm_clipping=10,
-        double_q=True
+        double_q=double_q
     )
     env.close()
 
@@ -120,19 +122,26 @@ def main():
     # My Code, add arg of lr_multiplier
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--multiplier', '-m', type=int, default=1)
+    parser.add_argument('--multiplier', '-m', type=float, default=1)
+    parser.add_argument('--double', action='store_true')
+    parser.add_argument('--fixed_seed', action='store_true')
+
     args = parser.parse_args()
 
     # Get Atari games.
     task = gym.make('PongNoFrameskip-v4')
 
     # Run training
-    seed = random.randint(0, 9999)
-    print('random seed = %d' % seed)
+    if args.fixed_seed:
+        seed = 1825
+        print('fixed seed = %d' % seed)
+    else:
+        seed = random.randint(0, 9999)
+        print('random seed = %d' % seed)
     env = get_env(task, seed)
     session = get_session()
     # atari_learn(env, session, num_timesteps=2e8)
-    atari_learn(env, session, num_timesteps=2e6, lr_multi=args.multiplier)
+    atari_learn(env, session, num_timesteps=2e8, lr_multi=args.multiplier, double_q=args.double)
 
 if __name__ == "__main__":
     main()

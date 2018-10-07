@@ -172,6 +172,8 @@ class QLearner(object):
     target_q_val = q_func(obs_tp1_float, self.num_actions, scope="target_q_func")
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="target_q_func")
 
+    print("Double Q Learning") if double_q else print("Vanilla Q Learning")
+
     if double_q:
       online_q_val = q_func(obs_tp1_float, self.num_actions, scope="q_func", reuse=True)
       online_action = tf.argmax(online_q_val, axis=1)
