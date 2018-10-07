@@ -1,6 +1,8 @@
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
 
 def draw_episode_rewards(data, figName):
@@ -63,6 +65,39 @@ def draw_episode_rewards_by_timestamp(data, figName):
     plt.show()
 
 
+def get_data(pkls, names):
+    datasets = []
+
+    for pkl, name in zip(pkls, names):
+        with open(pkl, 'rb') as fh:
+            data_dict = pickle.loads(fh.read())
+            data = pd.DataFrame.from_dict(data_dict)[["timestamp", "mean_episode_reward", "best_mean_episode_reward"]]
+            data.insert(
+                len(data.columns),
+                'Name',
+                name
+            )
+
+            datasets.append(data)
+
+    return datasets
+
+
+def plot_data(data, names):
+    if isinstance(data, list):
+        data = pd.concat(data, ignore_index=True)
+
+    for name in names:
+        sns.set(style="darkgrid", font_scale=1.5)
+        sns.lineplot(x="timestamp", y="best_mean_episode_reward", data=data[data["Name"] == name], label=name + ": best")
+        sns.lineplot(x="timestamp", y="mean_episode_reward", data=data[data["Name"] == name], label=name + ": mean")
+
+    plt.xlabel('Timesteps')
+    plt.ylabel('Mean Episode Reward')
+    plt.ticklabel_format(axis='x', style='sci', scilimits=(0, 3))
+    plt.show()
+
+
 def main():
     # a0d92d81-acd9-4076-ab3b-9bce9f02d5d8.pkl atari
     # dbc8b70a-5a49-4788-be9d-adb4fa673398.pkl lander
@@ -87,13 +122,23 @@ def main():
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--filename', '-f', type=str, required=True)
-    parser.add_argument('--exp_name', '-e', type=str, default='atari')
+    parser.add_argument('--file_name', '-f', type=str, nargs='*', required=True)
+    parser.add_argument('--exp_name', '-e', type=str, nargs='*')
     args = parser.parse_args()
 
-    with open(args.filename, 'rb') as fh:
-        data = pickle.loads(fh.read())
-    draw_episode_rewards_by_timestamp(data, args.exp_name)
+    if isinstance(args.file_name, list):
+        files = args.file_name
+    else:
+        files = [args.file_name]
+
+    if not args.exp_name:
+        import os
+        names = [os.path.split(file)[-1][:5] for file in files]
+    else:
+        names = args.exp_name
+
+    data = get_data(files, names)
+    plot_data(data, names)
 
 
 if __name__ == '__main__':
