@@ -30,11 +30,12 @@ def atari_model(img_in, num_actions, scope, reuse=False):
 
 def atari_learn(env,
                 session,
-                num_timesteps):
+                num_timesteps,
+                lr_multi):
     # This is just a rough estimate
     num_iterations = float(num_timesteps) / 4.0
 
-    lr_multiplier = 1.0
+    lr_multiplier = lr_multi
     lr_schedule = PiecewiseSchedule([
                                          (0,                   1e-4 * lr_multiplier),
                                          (num_iterations / 10, 1e-4 * lr_multiplier),
@@ -116,6 +117,12 @@ def get_env(task, seed):
     return env
 
 def main():
+    # My Code, add arg of lr_multiplier
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--multiplier', '-m', type=int, default=1)
+    args = parser.parse_args()
+
     # Get Atari games.
     task = gym.make('PongNoFrameskip-v4')
 
@@ -124,7 +131,8 @@ def main():
     print('random seed = %d' % seed)
     env = get_env(task, seed)
     session = get_session()
-    atari_learn(env, session, num_timesteps=2e8)
+    # atari_learn(env, session, num_timesteps=2e8)
+    atari_learn(env, session, num_timesteps=2e6, lr_multi=args.multiplier)
 
 if __name__ == "__main__":
     main()
