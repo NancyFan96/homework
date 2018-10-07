@@ -32,7 +32,7 @@ class QLearner(object):
     target_update_freq=10000,
     grad_norm_clipping=10,
     rew_file=None,
-    double_q=True,
+    double_q=False,
     lander=False):
     """Run Deep Q-learning algorithm.
 
@@ -167,15 +167,22 @@ class QLearner(object):
 
     q_val = q_func(obs_t_float, self.num_actions, scope="q_func")
     q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="q_func")
+    self.action = tf.argmax(q_val, axis=1)
 
     target_q_val = q_func(obs_tp1_float, self.num_actions, scope="target_q_func")
     target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="target_q_func")
 
-    self.action = tf.argmax(q_val, axis=1)
+    if double_q:
+      online_q_val = q_func(obs_tp1_float, self.num_actions, scope="q_func", reuse=True)
+      online_action = tf.argmax(online_q_val, axis=1)
+      self.target_action = tf.reduce_sum(target_q_val * tf.one_hot(online_action, self.num_actions), axis=1)
+    else:
+      self.target_action = tf.reduce_max(target_q_val, axis=1)
+
     self.total_error = tf.reduce_mean(
       huber_loss(
         self.rew_t_ph
-        + (1 - self.done_mask_ph) * gamma * tf.stop_gradient(tf.reduce_max(target_q_val, axis=1))
+        + (1 - self.done_mask_ph) * gamma * tf.stop_gradient(self.target_action)
         - tf.reduce_sum(q_val * tf.one_hot(self.act_t_ph, self.num_actions), axis=1)
       )
     )
