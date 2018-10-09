@@ -64,14 +64,14 @@ def draw_episode_rewards_by_timestamp(data, figName):
     plt.savefig(filename)
     plt.show()
 
-
-def get_data(pkls, names):
+def get_data(pkls, names, max_timestamp=5e7):
     datasets = []
 
     for pkl, name in zip(pkls, names):
         with open(pkl, 'rb') as fh:
             data_dict = pickle.loads(fh.read())
             data = pd.DataFrame.from_dict(data_dict)[["timestamp", "mean_episode_reward", "best_mean_episode_reward"]]
+            data = data[data["timestamp"] <= max_timestamp]
             data.insert(
                 len(data.columns),
                 'Name',
@@ -83,14 +83,16 @@ def get_data(pkls, names):
     return datasets
 
 
-def plot_data(data, names, title):
+def plot_data(data, names, title, clear=False):
     if isinstance(data, list):
         data = pd.concat(data, ignore_index=True)
 
+    sns.set()
     for name in names:
-        sns.set()
-        sns.lineplot(x="timestamp", y="best_mean_episode_reward", data=data[data["Name"] == name], label=name + ": best")
-        sns.lineplot(x="timestamp", y="mean_episode_reward", data=data[data["Name"] == name], label=name + ": mean")
+        if not clear:
+            sns.lineplot(x="timestamp", y="best_mean_episode_reward", data=data[data["Name"] == name], label=name + ": best")
+        
+        sns.lineplot(x="timestamp", y="mean_episode_reward", linestyle='--', data=data[data["Name"] == name], label=name + ": mean")
 
     plt.title(title)
     plt.xlabel('Timesteps')
@@ -131,6 +133,8 @@ def main():
     parser.add_argument('--title', '-t', type=str, default="Mean 100-Episode Reward of Basic Q-Learning")
     parser.add_argument('--file_name', '-f', type=str, nargs='*', required=True)
     parser.add_argument('--exp_name', '-e', type=str, nargs='*')
+    parser.add_argument('--num_timestamp', '-n', type=float, default=5e7)
+    parser.add_argument('--clear', action="store_true")
     args = parser.parse_args()
 
     if isinstance(args.file_name, list):
@@ -144,8 +148,8 @@ def main():
     else:
         names = args.exp_name
 
-    data = get_data(files, names)
-    plot_data(data, names, args.title)
+    data = get_data(files, names, args.num_timestamp)
+    plot_data(data, names, args.title, args.clear)
 
 
 if __name__ == '__main__':
