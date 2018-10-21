@@ -207,7 +207,9 @@ class ModelBasedPolicy(object):
 
         ### PROBLEM 1
         ### YOUR CODE HERE
-        next_state_pred = self._sess.run(self._dynamics_func, feed_dict={state: state, action: action})
+        next_state_pred = self._sess.run(self._dynamics_func,
+                                         feed_dict={self._state_ph: np.asarray(state).reshape(-1, self._state_dim),
+                                                    self._action_ph: np.asarray(action).reshape(-1, self._action_dim)})
 
         # raise NotImplementedError
 
