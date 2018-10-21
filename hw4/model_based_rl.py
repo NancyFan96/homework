@@ -85,9 +85,8 @@ class ModelBasedRL(object):
         losses = []
         ### PROBLEM 1
         ### YOUR CODE HERE
-        for epoch in range(self._training_epochs):
-            for states, actions, \
-                next_states, rewards, dones \
+        for i in range(self._training_epochs):
+            for states, actions, next_states, rewards, dones \
                     in dataset.random_iterator(self._training_batch_size):
                 losses.append(rewards)
         # raise NotImplementedError
