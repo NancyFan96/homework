@@ -86,10 +86,10 @@ class ModelBasedRL(object):
         ### PROBLEM 1
         ### YOUR CODE HERE
         for _ in range(self._training_epochs):
-            for states, actions, next_states, rewards, dones \
+            for states, actions, next_states, _, _ \
                     in dataset.random_iterator(self._training_batch_size):
-                self._policy.train_step(states, actions, next_states)
-                losses.append(rewards)
+                loss = self._policy.train_step(states, actions, next_states)
+                losses.append(loss)
         # raise NotImplementedError
 
         logger.record_tabular('TrainingLossStart', losses[0])

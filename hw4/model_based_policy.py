@@ -146,14 +146,12 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 2
         ### YOUR CODE HERE
-        # state = state_ph[0]
+        costs = tf.zeros(shape=[self._num_random_action_selection, 1], dtype=tf.float32)
+        states = tf.tile(state_ph, [self._num_random_action_selection, 1])
         actions_matirx = tf.random_uniform(minval=self._action_space_low,
                                            maxval=self._action_space_high,
                                            shape=[self._num_random_action_selection, self._horizon, self._action_dim],
                                            dtype=tf.float32)
-
-        costs = tf.zeros(shape=[self._num_random_action_selection, 1], dtype=tf.float32)
-        states = tf.tile(state_ph, [self._num_random_action_selection, 1])
         # states = tf.concat([state_ph for _ in range(self._num_random_action_selection)], axis=0)
         # print(states)
 
