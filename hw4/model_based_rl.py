@@ -85,7 +85,12 @@ class ModelBasedRL(object):
         losses = []
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        for epoch in range(self._training_epochs):
+            for states, actions, \
+                next_states, rewards, dones \
+                    in dataset.random_iterator(self._training_batch_size):
+                losses.append(rewards)
+        # raise NotImplementedError
 
         logger.record_tabular('TrainingLossStart', losses[0])
         logger.record_tabular('TrainingLossFinal', losses[-1])
@@ -117,7 +122,8 @@ class ModelBasedRL(object):
         logger.info('Training policy....')
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        self._train_policy(self._random_dataset)
+        # raise NotImplementedError
 
         logger.info('Evaluating predictions...')
         for r_num, (states, actions, _, _, _) in enumerate(self._random_dataset.rollout_iterator()):
@@ -125,7 +131,8 @@ class ModelBasedRL(object):
 
             ### PROBLEM 1
             ### YOUR CODE HERE
-            raise NotImplementedError
+            pred_states += [self._policy.predict(states[0], action) for action in actions]
+            # raise NotImplementedError
 
             states = np.asarray(states)
             pred_states = np.asarray(pred_states)
