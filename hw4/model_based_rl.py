@@ -85,7 +85,7 @@ class ModelBasedRL(object):
         losses = []
         ### PROBLEM 1
         ### YOUR CODE HERE
-        for i in range(self._training_epochs):
+        for _ in range(self._training_epochs):
             for states, actions, next_states, rewards, dones \
                     in dataset.random_iterator(self._training_batch_size):
                 self._policy.train_step(states, actions, next_states)
@@ -166,12 +166,25 @@ class ModelBasedRL(object):
         logger.info('Training policy....')
         ### PROBLEM 2
         ### YOUR CODE HERE
-        raise NotImplementedError
+        self._train_policy(self._random_dataset)
+        # raise NotImplementedError
 
         logger.info('Evaluating policy...')
         ### PROBLEM 2
         ### YOUR CODE HERE
-        raise NotImplementedError
+        eval_dataset = self._random_dataset
+        for r_num, (states, actions, _, _, _) in enumerate(eval_dataset.rollout_iterator()):
+            for s_num, state in enumerate(states):
+                action = self._policy.get_action(state)
+                next_state = self._policy.predict(state, action)
+                reward = self._env.cost_fn(state, action, next_state)
+
+                if s_num < states.shape[0]:
+                    eval_dataset.add(state, action, next_state, reward, False)
+                else:
+                    eval_dataset.add(state, action, next_state, reward, True)
+
+        # raise NotImplementedError
 
         logger.info('Trained policy')
         self._log(eval_dataset)

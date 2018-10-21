@@ -146,7 +146,20 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 2
         ### YOUR CODE HERE
-        raise NotImplementedError
+        state = state_ph
+        print(np.shape(state))
+
+        actions = np.random.uniform(low=self._action_space_low,
+                                    high=self._action_space_high,
+                                    size=(self._num_random_action_selection, self._horizon, self._action_dim))
+
+        costs = np.zeros(self._num_random_action_selection)
+        for a_num, action in enumerate(actions):
+            next_state = self.predict(state, action)
+            cost = self._cost_fn(state, action, next_state)
+            costs[a_num] += cost
+        best_action = actions[np.argmax(costs)[0]]
+        # raise NotImplementedError
 
         return best_action
 
@@ -167,7 +180,7 @@ class ModelBasedPolicy(object):
 
         ### PROBLEM 2
         ### YOUR CODE HERE
-        best_action = None
+        best_action = self._setup_action_selection(state_ph)
 
         sess.run(tf.global_variables_initializer())
 
@@ -227,18 +240,9 @@ class ModelBasedPolicy(object):
 
         ### PROBLEM 2
         ### YOUR CODE HERE
-        # self._action_dim = env.action_space.shape[0]
-        # self._action_space_low = env.action_space.low
-        # self._action_space_high = env.action_space.high
-        # self._init_dataset = init_dataset
-        # self._horizon = horizon
-        # self._num_random_action_selection = num_random_action_selection
-
-        actions = np.random.uniform(low=self._action_space_low,
-                                    high=self._action_space_high,
-                                    size=self._num_random_action_selection)
-        costs = np.array([self._cost_fn(state, action, self.predict(state, action)) for action in actions])
-        best_action = actions[np.argmax(costs)[0]]
+        best_action = self._sess.run(self._best_action,
+                                     feed_dict={self._state_ph: np.asarray(state).reshape(-1, self._state_dim)})
+        best_action = best_action.flatten()
         # raise NotImplementedError
 
         assert np.shape(best_action) == (self._action_dim,)
