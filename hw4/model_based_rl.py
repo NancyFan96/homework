@@ -172,7 +172,7 @@ class ModelBasedRL(object):
         logger.info('Evaluating policy...')
         ### PROBLEM 2
         ### YOUR CODE HERE
-        eval_dataset = self._gather_rollouts(self._policy, self._max_rollout_length)
+        eval_dataset = self._gather_rollouts(self._policy, self._num_onpolicy_rollouts)
         # raise NotImplementedError
 
         logger.info('Trained policy')
@@ -197,16 +197,19 @@ class ModelBasedRL(object):
             ### PROBLEM 3
             ### YOUR CODE HERE
             logger.info('Training policy...')
-            raise NotImplementedError
+            self._train_policy(dataset)
+            # raise NotImplementedError
 
             ### PROBLEM 3
             ### YOUR CODE HERE
             logger.info('Gathering rollouts...')
-            raise NotImplementedError
+            new_dataset = self._gather_rollouts(self._policy, self._num_onpolicy_rollouts)
+            # raise NotImplementedError
 
             ### PROBLEM 3
             ### YOUR CODE HERE
             logger.info('Appending dataset...')
-            raise NotImplementedError
+            dataset.append(new_dataset)
+            # raise NotImplementedError
 
             self._log(new_dataset)

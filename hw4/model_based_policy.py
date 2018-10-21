@@ -152,7 +152,7 @@ class ModelBasedPolicy(object):
                                            shape=[self._num_random_action_selection, self._horizon, self._action_dim],
                                            dtype=tf.float32)
 
-        costs = np.zeros(self._num_random_action_selection)
+        costs = tf.zeros(shape=[self._num_random_action_selection, 1], dtype=tf.float32)
         states = tf.tile(state_ph, [self._num_random_action_selection, 1])
         # states = tf.concat([state_ph for _ in range(self._num_random_action_selection)], axis=0)
         # print(states)
@@ -160,10 +160,12 @@ class ModelBasedPolicy(object):
         for t in range(self._horizon):
             actions = actions_matirx[:, t, :]
             next_states = self._dynamics_func(states, actions, reuse=True)
-            costs += self._cost_fn(states, actions, next_states)
+            costs_t = tf.expand_dims(self._cost_fn(states, actions, next_states), 1)
+            costs = tf.concat([costs, costs_t], 1)
             states = next_states
 
-        best_action = actions_matirx[np.argmax(costs)][0]
+        costs_sum = tf.reduce_sum(costs, 1)
+        best_action = actions_matirx[:, 0, :][tf.argmin(costs_sum)]
         # raise NotImplementedError
 
         return best_action
@@ -201,11 +203,10 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 1
         ### YOUR CODE HERE
-        opt = self._optimizer
-        loss = self._loss
-        _, loss = self._sess.run([opt, loss], feed_dict={self._state_ph: states,
-                                                         self._action_ph: actions,
-                                                         self._next_state_ph: next_states})
+        _, loss = self._sess.run([self._optimizer, self._loss],
+                                 feed_dict={self._state_ph: states,
+                                            self._action_ph: actions,
+                                            self._next_state_ph: next_states})
         # raise NotImplementedError
 
         return loss
