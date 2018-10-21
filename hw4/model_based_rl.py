@@ -88,6 +88,7 @@ class ModelBasedRL(object):
         for i in range(self._training_epochs):
             for states, actions, next_states, rewards, dones \
                     in dataset.random_iterator(self._training_batch_size):
+                self._policy.train_step(states, actions, next_states)
                 losses.append(rewards)
         # raise NotImplementedError
 
@@ -130,8 +131,12 @@ class ModelBasedRL(object):
 
             ### PROBLEM 1
             ### YOUR CODE HERE
-            pred_states += [self._policy.predict(states[0], action) for action in actions]
-            # raise NotImplementedError
+            state = states[0]
+            for action in actions:
+                pred_states += [self._policy.predict(state, action)]
+                state = pred_states[-1]
+
+            # raise NotImplementedErrorz
 
             states = np.asarray(states)
             pred_states = np.asarray(pred_states)

@@ -210,9 +210,8 @@ class ModelBasedPolicy(object):
         next_state_pred = self._sess.run(self._next_state_pred,
                                          feed_dict={self._state_ph: np.asarray(state).reshape(-1, self._state_dim),
                                                     self._action_ph: np.asarray(action).reshape(-1, self._action_dim)})
-
-        # raise NotImplementedError
         next_state_pred = next_state_pred.flatten()
+        # raise NotImplementedError
 
         assert np.shape(next_state_pred) == (self._state_dim,)
         return next_state_pred
