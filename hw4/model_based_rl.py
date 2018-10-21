@@ -172,18 +172,7 @@ class ModelBasedRL(object):
         logger.info('Evaluating policy...')
         ### PROBLEM 2
         ### YOUR CODE HERE
-        eval_dataset = self._random_dataset
-        for r_num, (states, actions, _, _, _) in enumerate(eval_dataset.rollout_iterator()):
-            for s_num, state in enumerate(states):
-                action = self._policy.get_action(state)
-                next_state = self._policy.predict(state, action)
-                reward = self._env.cost_fn(state, action, next_state)
-
-                if s_num < states.shape[0]:
-                    eval_dataset.add(state, action, next_state, reward, False)
-                else:
-                    eval_dataset.add(state, action, next_state, reward, True)
-
+        eval_dataset = self._gather_rollouts(self._policy, self._max_rollout_length)
         # raise NotImplementedError
 
         logger.info('Trained policy')

@@ -146,19 +146,24 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 2
         ### YOUR CODE HERE
-        state = state_ph
-        print(np.shape(state))
-
-        actions = np.random.uniform(low=self._action_space_low,
-                                    high=self._action_space_high,
-                                    size=(self._num_random_action_selection, self._horizon, self._action_dim))
+        # state = state_ph[0]
+        actions_matirx = tf.random_uniform(minval=self._action_space_low,
+                                           maxval=self._action_space_high,
+                                           shape=[self._num_random_action_selection, self._horizon, self._action_dim],
+                                           dtype=tf.float32)
 
         costs = np.zeros(self._num_random_action_selection)
-        for a_num, action in enumerate(actions):
-            next_state = self.predict(state, action)
-            cost = self._cost_fn(state, action, next_state)
-            costs[a_num] += cost
-        best_action = actions[np.argmax(costs)[0]]
+        states = tf.tile(state_ph, [self._num_random_action_selection, 1])
+        # states = tf.concat([state_ph for _ in range(self._num_random_action_selection)], axis=0)
+        # print(states)
+
+        for t in range(self._horizon):
+            actions = actions_matirx[:, t, :]
+            next_states = self._dynamics_func(states, actions, reuse=True)
+            costs += self._cost_fn(states, actions, next_states)
+            states = next_states
+
+        best_action = actions_matirx[np.argmax(costs)][0]
         # raise NotImplementedError
 
         return best_action
@@ -221,8 +226,8 @@ class ModelBasedPolicy(object):
         ### PROBLEM 1
         ### YOUR CODE HERE
         next_state_pred = self._sess.run(self._next_state_pred,
-                                         feed_dict={self._state_ph: np.asarray(state).reshape(-1, self._state_dim),
-                                                    self._action_ph: np.asarray(action).reshape(-1, self._action_dim)})
+                                         feed_dict={self._state_ph: np.expand_dims(state, axis=0),
+                                                    self._action_ph: np.expand_dims(action, axis=0)})
         next_state_pred = next_state_pred.flatten()
         # raise NotImplementedError
 
@@ -241,7 +246,7 @@ class ModelBasedPolicy(object):
         ### PROBLEM 2
         ### YOUR CODE HERE
         best_action = self._sess.run(self._best_action,
-                                     feed_dict={self._state_ph: np.asarray(state).reshape(-1, self._state_dim)})
+                                     feed_dict={self._state_ph: np.expand_dims(state, axis=0)})
         best_action = best_action.flatten()
         # raise NotImplementedError
 
