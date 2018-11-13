@@ -539,15 +539,17 @@ def train_AC(
                 raise NotImplementedError
             elif dm == 'hist' or dm == 'rbf':
                 ### PROBLEM 1
+                exploration.fit_density_model(ob_no)
                 ### YOUR CODE HERE
-                raise NotImplementedError
+                #raise NotImplementedError
             else:
                 assert False
 
             # 2. Modify the reward
             ### PROBLEM 1
+            re_n = exploration.modify_reward(re_n, ob_no)
             ### YOUR CODE HERE
-            raise NotImplementedError
+            # raise NotImplementedError
 
             print('average state', np.mean(ob_no, axis=0))
             print('average action', np.mean(ac_na, axis=0))
