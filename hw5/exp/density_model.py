@@ -198,15 +198,15 @@ class Exemplar(Density_Model):
         self.encoder1, self.encoder2, self.prior, self.discriminator = self.forward_pass(self.state1, self.state2)
         self.discrim_target = tf.placeholder(shape=[None, 1], name="discrim_target", dtype=tf.float32)
 
-        raise NotImplementedError
-        self.log_likelihood = None
-        self.likelihood = None
-        self.kl = None
+        # raise NotImplementedError
+        self.log_likelihood = tf.squeeze(self.discriminator.log_prob(self.discrim_target), axis=1)
+        self.likelihood = tf.squeeze(self.discriminator.prob(self.discrim_target), axis=1)
+        self.kl = tfp.distributions.kl_divergence(self.encoder1, self.prior) + tfp.distributions.kl_divergence(self.encoder2, self.prior)
         assert len(self.log_likelihood.shape) == len(self.likelihood.shape) == len(self.kl.shape) == 1
 
-        raise NotImplementedError
-        self.elbo = None
-        self.update_op = None
+        # raise NotImplementedError
+        self.elbo = tf.reduce_mean(self.log_likelihood - self.kl_weight * self.kl)
+        self.update_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(-self.elbo)
 
     def define_placeholders(self):
         state1 = tf.placeholder(shape=[None, self.ob_dim], name="s1", dtype=tf.float32)
@@ -234,8 +234,14 @@ class Exemplar(Density_Model):
 
             Hint: use build_mlp
         """
-        z_mean = None # raise NotImplementedError
-        z_logstd = None # raise NotImplementedError
+        z_mean = build_mlp(input_placeholder=state,
+                           output_size=z_size,
+                           scope=scope,
+                           n_layers=n_layers,
+                           size=hid_size)
+        # raise NotImplementedError
+        z_logstd = tf.get_variable('z_logstd', shape=(z_size,), initializer=tf.zeros_initializer())
+        # raise NotImplementedError
         return tfp.distributions.MultivariateNormalDiag(loc=z_mean, scale_diag=tf.exp(z_logstd))
 
     def make_prior(self, z_size):
@@ -250,8 +256,8 @@ class Exemplar(Density_Model):
                 prior_mean and prior_logstd are for a standard normal distribution
                     both have dimension z_size
         """
-        prior_mean = None # raise NotImplementedError
-        prior_logstd = None # raise NotImplementedError
+        prior_mean = tf.zeros(z_size)       # raise NotImplementedError
+        prior_logstd = tf.ones(z_size)      # raise NotImplementedError
         return tfp.distributions.MultivariateNormalDiag(loc=prior_mean, scale_diag=tf.exp(prior_logstd))
 
     def make_discriminator(self, z, output_size, scope, n_layers, hid_size):
@@ -273,7 +279,12 @@ class Exemplar(Density_Model):
 
             Hint: use build_mlp
         """
-        logit = None # raise NotImplementedError
+        logit = build_mlp(input_placeholder=z,
+                          output_size=output_size,
+                          scope=scope,
+                          n_layers=n_layers,
+                          size=hid_size)
+        # raise NotImplementedError
         return tfp.distributions.Bernoulli(logit)
 
     def forward_pass(self, state1, state2):
@@ -311,9 +322,9 @@ class Exemplar(Density_Model):
         prior = self.make_prior(self.hid_dim/2)
 
         # Sampled Latent
-        z1 = None # raise NotImplementedError
-        z2 = None # raise NotImplementedError
-        z = None # raise NotImplementedError
+        z1 = encoder1.sample()              # raise NotImplementedError
+        z2 = encoder2.sample()              # raise NotImplementedError
+        z = tf.concat([z1, z2], axis=1)     # raise NotImplementedError
 
         # Discriminator
         discriminator = make_discriminator(z, 1, 'discriminator', n_layers=2, hid_size=self.hid_dim)
@@ -338,7 +349,9 @@ class Exemplar(Density_Model):
         assert state1.ndim == state2.ndim == target.ndim
         assert state1.shape[1] == state2.shape[1] == self.ob_dim
         assert state1.shape[0] == state2.shape[0] == target.shape[0]
-        raise NotImplementedError
+        # raise NotImplementedError
+        _, ll, kl, elbo = self.sess.run([self.update_op, self.log_likelihood, self.kl, self.elbo],
+                                        feed_dict={self.state1: state1, self.state2: state2, self.discrim_target: target})
         return ll, kl, elbo
 
     def get_likelihood(self, state1, state2):
@@ -359,7 +372,11 @@ class Exemplar(Density_Model):
         assert state1.ndim == state2.ndim
         assert state1.shape[1] == state2.shape[1] == self.ob_dim
         assert state1.shape[0] == state2.shape[0]
-        raise NotImplementedError
+        # raise NotImplementedError
+        likelihood = self.sess.run(self.likelihood,
+                                   feed_dict={self.state1: state1,
+                                              self.state2: state2,
+                                              self.discrim_target: np.ones((state1.shape[0], 1))})
         return likelihood
 
     def get_prob(self, state):
@@ -377,8 +394,8 @@ class Exemplar(Density_Model):
                     compute the probability density of x from the discriminator
                     likelihood (see homework doc)
         """
-        likelihood = None # raise NotImplementedError
+        likelihood = self.get_likelihood(state, state)      # raise NotImplementedError
         # avoid divide by 0 and log(0)
         likelihood = np.clip(np.squeeze(likelihood), 1e-5, 1-1e-5)
-        prob = None # raise NotImplementedError
+        prob = (1.0 - likelihood) / likelihood              # raise NotImplementedError
         return prob

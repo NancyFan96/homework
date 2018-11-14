@@ -536,12 +536,13 @@ def train_AC(
             if dm == 'ex2':
                 ### PROBLEM 3
                 ### YOUR CODE HERE
-                raise NotImplementedError
+                # raise NotImplementedError
+                ll, kl, elbo = exploration.fit_density_model(ob_no)
             elif dm == 'hist' or dm == 'rbf':
                 ### PROBLEM 1
-                exploration.fit_density_model(ob_no)
                 ### YOUR CODE HERE
                 #raise NotImplementedError
+                exploration.fit_density_model(ob_no)
             else:
                 assert False
 
