@@ -148,7 +148,7 @@ class RBF(Density_Model):
             assert deltas.shape == (b, B, ob_dim)
 
             # 2. Euclidean distance
-            euc_dists = np.sum(deltas, axis=2)                          # raise NotImplementedError
+            euc_dists = np.sqrt(np.sum(deltas ** 2, axis=2))                          # raise NotImplementedError
             assert euc_dists.shape == (b, B)
 
             # Gaussian
